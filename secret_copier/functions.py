@@ -4,6 +4,25 @@ import kubernetes.client
 global_configs = {}
 
 
+class global_logger:
+
+    current = None
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def __enter__(self):
+        self.previous = global_logger.current
+        global_logger.current = self.logger
+
+    def __exit__(self, *args):
+        global_logger.current = self.previous
+
+
+def get_logger():
+    return global_logger.current
+
+
 def lookup(object, key, default=None):
     """Looks up a property within an object using a dotted path as key.
     If the property isn't found, then return the default value.
@@ -69,6 +88,10 @@ def matches_target_namespace(name, namespace, configs=None):
 
 
 def reconcile_namespace(name, namespace):
+    """Perform reconciliation of the specified namespace.
+
+    """
+
     secrets = list(matches_target_namespace(name, namespace))
 
     if secrets:
@@ -76,6 +99,10 @@ def reconcile_namespace(name, namespace):
 
 
 def reconcile_config(name, config):
+    """Perform reconciliation for the specified config.
+
+    """
+
     core_api = kubernetes.client.CoreV1Api()
     namespaces = core_api.list_namespace()
 
@@ -88,5 +115,92 @@ def reconcile_config(name, config):
             update_secrets(namespace.metadata.name, secrets)
 
 
+def update_secret(name, secret):
+    """Updates a single secret in the specified namespace.
+
+    """
+
+    core_api = kubernetes.client.CoreV1Api()
+
+    # Read the source secret to be copied or to be used for update. If
+    # it doesn't exist, we will fail for just this update. We don't
+    # raise an exception as it will break any reconcilation loop being
+    # applied at larger context.
+
+    source_namespace = lookup(secret, "namespace")
+    source_secret_name = lookup(secret, "name")
+
+    target_namespace = name
+    target_secret_name = lookup(secret, "newName", source_secret_name)
+
+    try:
+        source_secret = core_api.read_namespaced_secret(
+            namespace=source_namespace, name=source_secret_name
+        )
+    except kubernetes.client.rest.ApiException as e:
+        get_logger().warning(
+            f"Secret {source_secret_name} in namespace {source_namespace} cannot be read."
+        )
+        return
+
+    # Now check whether the target secret already exists in the target
+    # namespace. If it doesn't exist we just need to copy it, apply any
+    # labels and we are done. Fail outright if get any errors besides
+    # not being able to find the resource as that indicates a bigger
+    # problem.
+
+    target_secret = None
+
+    try:
+        target_secret = core_api.read_namespaced_secret(
+            namespace=target_namespace, name=target_secret_name
+        )
+    except kubernetes.client.rest.ApiException as e:
+        if e.status != 404:
+            raise
+
+    if target_secret is None:
+        secret_body = {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {"name": target_secret_name},
+        }
+
+        secret_labels = source_secret.metadata.labels or {}
+        secret_labels.update(lookup(secret, "applyLabels", {}))
+
+        secret_body["metadata"]["labels"] = secret_labels
+
+        secret_body["type"] = source_secret.type
+        secret_body["data"] = source_secret.data
+
+        try:
+            core_api.create_namespaced_secret(
+                namespace=target_namespace, body=secret_body
+            )
+        except kubernetes.client.rest.ApiException as e:
+            if e.status == 409:
+                get_logger().warning(
+                    f"Secret {target_secret_name} in namespace {target_namespace} already exists."
+                )
+                return
+            raise
+
+        get_logger().info(
+            f"Copied secret {source_secret_name} from namespace {source_namespace} to target namespace {target_namespace} as {target_secret_name}."
+        )
+
+    # If the secret already existed, we need to determine if the
+    # original secret had changed and if it had, update the secret
+    # in the namespace.
+
+    pass
+
+
 def update_secrets(name, secrets):
-    print(f'UDPATE SECRETS IN {name}:', secrets)
+    """Update the specified secrets in the namespace.
+
+    """
+
+    for secret in secrets:
+        update_secret(name, secret)

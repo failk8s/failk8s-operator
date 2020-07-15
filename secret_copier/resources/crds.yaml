@@ -54,11 +54,5 @@ spec:
                       newName:
                         type: string
                       applyLabels:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            value:
-                              type: string
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true

@@ -1,10 +1,10 @@
 import kopf
 
-from .functions import reconcile_namespace
+from .functions import global_logger, reconcile_namespace
 
 
 @kopf.on.event("", "v1", "namespaces")
-def my_handler(type, event, **_):
+def my_handler(type, event, logger, **_):
     resource = event["object"]
     name = resource["metadata"]["name"]
 
@@ -12,5 +12,6 @@ def my_handler(type, event, **_):
     # namespace is added later, do a full reconcilation to ensure that
     # all the required secrets have been copied into the namespace.
 
-    if type in (None, "ADDED"):
-        reconcile_namespace(name, resource)
+    with global_logger(logger):
+        if type in (None, "ADDED"):
+            reconcile_namespace(name, resource)
