@@ -155,13 +155,17 @@ def update_secret(name, secret):
     # Read the source secret to be copied or to be used for update. If
     # it doesn't exist, we will fail for just this update. We don't
     # raise an exception as it will break any reconcilation loop being
-    # applied at larger context.
+    # applied at larger context. Even if the target secret name is
+    # different, don't copy the secret back to the same namespace.
 
     source_namespace = lookup(secret, "namespace")
     source_secret_name = lookup(secret, "name")
 
     target_namespace = name
     target_secret_name = lookup(secret, "newName", source_secret_name)
+
+    if source_namespace == target_namespace:
+        return
 
     try:
         source_secret = core_api.read_namespaced_secret(
