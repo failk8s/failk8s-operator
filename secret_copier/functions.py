@@ -81,13 +81,12 @@ def matches_target_namespace(name, resource, configs=None):
                 labels = lookup(resource, "metadata.labels", {})
                 for key, value in match_labels.items():
                     if labels.get(key) != value:
-                        continue
+                        break
                 else:
                     yield secret
 
-                continue
-
-            yield secret
+            else:
+                yield secret
 
 
 def matches_source_secret(name, namespace, configs=None):
