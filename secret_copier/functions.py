@@ -190,11 +190,37 @@ def update_secret(name, secret):
             f"Copied secret {source_secret_name} from namespace {source_namespace} to target namespace {target_namespace} as {target_secret_name}."
         )
 
-    # If the secret already existed, we need to determine if the
-    # original secret had changed and if it had, update the secret
-    # in the namespace.
+        return
 
-    pass
+    # If the secret already existed, we need to determine if the
+    # original secret had changed and if it had, update the secret in
+    # the namespace. We compare by looking at the labels, secret type
+    # and data.
+
+    apply_labels = lookup(secret, "applyLabels", {})
+
+    target_labels = target_secret.metadata.labels or {}
+    target_labels = {k: target_labels[k] for k in apply_labels}
+
+    if (
+        source_secret.type == target_secret.type
+        and source_secret.data == target_secret.data
+        and apply_labels == target_labels
+    ):
+        return
+
+    target_secret.type = source_secret.type
+    target_secret.data = source_secret.data
+
+    target_secret.metadata.labels.update(apply_labels)
+
+    core_api.replace_namespaced_secret(
+        namespace=target_namespace, name=target_secret_name, body=target_secret
+    )
+
+    get_logger().info(
+        f"Updated secret {target_secret_name} in namespace {target_namespace} from secret {source_secret_name} in namespace {source_namespace}."
+    )
 
 
 def update_secrets(name, secrets):
