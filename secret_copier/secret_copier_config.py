@@ -20,8 +20,11 @@ def config_resume(name, body, logger, **_):
 
 
 @kopf.on.update("failk8s.dev", "v1alpha1", "secretcopierconfigs")
-def config_update(name, body, **_):
+def config_update(name, body, logger, **_):
     global_configs[name] = body
+
+    with global_logger(logger):
+        reconcile_config(name, body)
 
 
 @kopf.on.delete("failk8s.dev", "v1alpha1", "secretcopierconfigs", id="failk8s")
