@@ -76,7 +76,7 @@ def matches_target_namespace(name, resource, configs=None):
                 secret, "targetNamespaces.labelSelector.matchLabels", {}
             )
             if match_labels:
-                labels = lookup(resource, "metadata.labels", {})
+                labels = resource.metadata.labels or {}
                 for key, value in match_labels.items():
                     if labels.get(key) != value:
                         continue
