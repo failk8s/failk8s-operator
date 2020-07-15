@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec kopf run operator.py --verbose
+exec kopf run operator.py
