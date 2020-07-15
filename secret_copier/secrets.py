@@ -1,11 +1,12 @@
 import kopf
 
-from .functions import global_logger, reconcile_namespace
+from .functions import global_logger, reconcile_secret
 
 
-@kopf.on.event("", "v1", "namespaces")
-def namespace_event(type, event, logger, **_):
+@kopf.on.event("", "v1", "secrets")
+def secret_event(type, event, logger, **_):
     resource = event["object"]
+    namespace = resource["metadata"]["namespace"]
     name = resource["metadata"]["name"]
 
     # If namespace already exists, indicated by type being None, or the
@@ -13,5 +14,5 @@ def namespace_event(type, event, logger, **_):
     # all the required secrets have been copied into the namespace.
 
     with global_logger(logger):
-        if type in (None, "ADDED"):
-            reconcile_namespace(name, resource)
+        if type in (None, "ADDED", "MODIFIED"):
+            reconcile_secret(name, resource, namespace)

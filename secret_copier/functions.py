@@ -1,26 +1,27 @@
 import kubernetes
 import kubernetes.client
+import threading
 
 global_configs = {}
 
 
 class global_logger:
 
-    current = None
+    local = threading.local()
 
     def __init__(self, logger):
         self.logger = logger
 
     def __enter__(self):
-        self.previous = global_logger.current
-        global_logger.current = self.logger
+        self.previous = getattr(global_logger.local, "current", None)
+        global_logger.local.current = self.logger
 
     def __exit__(self, *args):
-        global_logger.current = self.previous
+        global_logger.local.current = self.previous
 
 
 def get_logger():
-    return global_logger.current
+    return global_logger.local.current
 
 
 def lookup(object, key, default=None):
@@ -42,7 +43,7 @@ def lookup(object, key, default=None):
     return value
 
 
-def matches_target_namespace(name, namespace, configs=None):
+def matches_target_namespace(name, resource, configs=None):
     """Returns all secrets which are candidates to be copied into the
     namespace passed as argument.
 
@@ -75,7 +76,7 @@ def matches_target_namespace(name, namespace, configs=None):
                 secret, "targetNamespaces.labelSelector.matchLabels", {}
             )
             if match_labels:
-                labels = lookup(namespace, "metadata.labels", {})
+                labels = lookup(resource, "metadata.labels", {})
                 for key, value in match_labels.items():
                     if labels.get(key) != value:
                         continue
@@ -87,18 +88,36 @@ def matches_target_namespace(name, namespace, configs=None):
             yield secret
 
 
-def reconcile_namespace(name, namespace):
+def matches_source_secret(name, namespace, configs=None):
+    """Returns all configs which are candidates to be applied based on
+    the specified secret being changed.
+
+    """
+
+    if configs is None:
+        configs = global_configs.values()
+
+    for config in configs:
+        secrets = lookup(config, "spec.secrets", [])
+
+        for secret in secrets:
+            if secret["name"] == name and secret["namespace"] == namespace:
+                yield config
+                continue
+
+
+def reconcile_namespace(name, resource):
     """Perform reconciliation of the specified namespace.
 
     """
 
-    secrets = list(matches_target_namespace(name, namespace))
+    secrets = list(matches_target_namespace(name, resource))
 
     if secrets:
         update_secrets(name, secrets)
 
 
-def reconcile_config(name, config):
+def reconcile_config(name, resource):
     """Perform reconciliation for the specified config.
 
     """
@@ -108,11 +127,22 @@ def reconcile_config(name, config):
 
     for namespace in namespaces.items:
         secrets = list(
-            matches_target_namespace(namespace.metadata.name, namespace, [config])
+            matches_target_namespace(namespace.metadata.name, namespace, [resource])
         )
 
         if secrets:
             update_secrets(namespace.metadata.name, secrets)
+
+
+def reconcile_secret(name, resource, namespace):
+    """Perform reconciliation for the specified secret.
+
+    """
+
+    configs = list(matches_source_secret(name, namespace))
+
+    for config in configs:
+        reconcile_config(config["metadata"]["name"], config)
 
 
 def update_secret(name, secret):
@@ -199,20 +229,22 @@ def update_secret(name, secret):
 
     apply_labels = lookup(secret, "applyLabels", {})
 
+    source_labels = source_secret.metadata.labels or {}
+    source_labels.update(apply_labels)
+
     target_labels = target_secret.metadata.labels or {}
-    target_labels = {k: target_labels[k] for k in apply_labels}
 
     if (
         source_secret.type == target_secret.type
         and source_secret.data == target_secret.data
-        and apply_labels == target_labels
+        and source_labels == target_labels
     ):
         return
 
     target_secret.type = source_secret.type
     target_secret.data = source_secret.data
 
-    target_secret.metadata.labels.update(apply_labels)
+    target_secret.metadata.labels = source_labels
 
     core_api.replace_namespaced_secret(
         namespace=target_namespace, name=target_secret_name, body=target_secret
