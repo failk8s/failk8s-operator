@@ -63,6 +63,7 @@ def matches_target_namespace(name, resource, configs=None):
             # will be ignored.
 
             match_names = lookup(secret, "targetNamespaces.nameSelector.matchNames", [])
+
             if match_names:
                 if name in match_names:
                     yield secret
@@ -75,8 +76,9 @@ def matches_target_namespace(name, resource, configs=None):
             match_labels = lookup(
                 secret, "targetNamespaces.labelSelector.matchLabels", {}
             )
+
             if match_labels:
-                labels = resource.metadata.labels or {}
+                labels = lookup(resource, "metadata.labels", {})
                 for key, value in match_labels.items():
                     if labels.get(key) != value:
                         continue
@@ -127,7 +129,7 @@ def reconcile_config(name, resource):
 
     for namespace in namespaces.items:
         secrets = list(
-            matches_target_namespace(namespace.metadata.name, namespace, [resource])
+            matches_target_namespace(namespace.metadata.name, namespace.to_dict(), [resource])
         )
 
         if secrets:
