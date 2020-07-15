@@ -13,5 +13,5 @@ def namespace_event(type, event, logger, **_):
     # all the required secrets have been copied into the namespace.
 
     with global_logger(logger):
-        if type in (None, "ADDED"):
+        if type in (None, "ADDED", "MODIFIED"):
             reconcile_namespace(name, resource)
