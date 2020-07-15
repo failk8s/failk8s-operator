@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opr-secret-copier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: opr-secret-copier
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        deployment: opr-secret-copier
+    spec:
+      serviceAccountName: opr-secret-copier
+      containers:
+      - name: operator
+        image: registry.test/opr-secret-copier:latest
+        imagePullPolicy: Always

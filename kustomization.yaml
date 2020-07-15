@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: failk8s-operators
+
+resources:
+- resources/namespace.yaml
+- resources/service-account.yaml
+- resources/role-binding.yaml
+- opr-secret-copier/resources/crds.yaml
+- opr-secret-copier/resources/deployment.yaml
+
+#images:
+#- name: registry.test/opr-secret-copier
+#  newName: registry.test.eduk8s.io/opr-secret-copier
