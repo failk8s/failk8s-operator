@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: opr-secret-copier
+  name: failk8s-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      deployment: opr-secret-copier
+      deployment: failk8s-operator
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        deployment: opr-secret-copier
+        deployment: failk8s-operator
     spec:
-      serviceAccountName: opr-secret-copier
+      serviceAccountName: failk8s-operator
       containers:
       - name: operator
-        image: registry.test/opr-secret-copier:latest
+        image: registry.test/failk8s-operator:latest
         imagePullPolicy: Always
