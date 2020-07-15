@@ -1,6 +1,9 @@
 Operator to support failk8s
 ===========================
 
+For now the operator only handles copying of secrets to namespaces. The
+ability to inject secrets into service accounts is still coming.
+
 Accepts a custom resource called ``SecretCopierConfig``. You can create
 more than one of this type of resource.
 
