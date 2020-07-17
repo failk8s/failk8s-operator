@@ -5,6 +5,7 @@ namespace: failk8s-operator
 
 resources:
 - secret_copier/resources/secret_copier_config.yaml
+- secret_injector/resources/secret_injector_config.yaml
 - resources/namespace.yaml
 - resources/serviceaccount.yaml
 - resources/rolebinding.yaml

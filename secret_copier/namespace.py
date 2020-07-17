@@ -4,7 +4,7 @@ from .functions import global_logger, reconcile_namespace
 
 
 @kopf.on.event("", "v1", "namespaces")
-def namespace_event(type, event, logger, **_):
+def copier_namespace_event(type, event, logger, **_):
     resource = event["object"]
     name = resource["metadata"]["name"]
 
