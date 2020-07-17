@@ -126,7 +126,7 @@ def reconcile_config(config_name, config_obj):
 
     """
 
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file())
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
 
     namespace_query = pykube.Namespace.objects(api)
 
@@ -157,7 +157,7 @@ def update_secret(namespace_name, rule):
 
     """
 
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file())
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
 
     # Read the source secret to be copied or to be used for update. If
     # it doesn't exist, we will fail for just this update. We don't

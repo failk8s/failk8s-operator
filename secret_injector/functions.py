@@ -164,7 +164,7 @@ def reconcile_config(config_name, config_obj):
 
     """
 
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file())
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
 
     namespace_query = pykube.Namespace.objects(api)
 
@@ -184,7 +184,7 @@ def reconcile_secret(secret_name, namespace_name, secret_obj):
 
     """
 
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file())
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
 
     try:
         namespace_item = pykube.Namespace.objects(api).get(name=namespace_name)
@@ -215,7 +215,7 @@ def reconcile_namespace(namespace_name, rule):
 
     """
 
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file())
+    api = pykube.HTTPClient(pykube.KubeConfig.from_env())
 
     # Need to list the secrets in the namespace and see if any match
     # the rule. If they do, then we see if there is a service account
