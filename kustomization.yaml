@@ -12,5 +12,6 @@ resources:
 - resources/deployment.yaml
 
 #images:
-#- name: registry.test/failk8s-operator
-#  newName: registry.test.eduk8s.io/failk8s-operator
+#- name: quay.io/failk8s/failk8s-operator:latest
+#  newName: registry.test/failk8s-operator
+#  newTag: latest
