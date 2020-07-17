@@ -120,7 +120,7 @@ def matches_source_secret(secret_name, secret_obj, rule):
         else:
             return True
 
-    return True
+    return False
 
 
 def matches_service_account(service_account_name, service_account_obj, rule):
