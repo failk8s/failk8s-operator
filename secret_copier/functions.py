@@ -215,8 +215,10 @@ def update_secret(namespace_name, rule):
             },
         }
 
-        target_secret_labels = source_secret_item.labels
-        target_secret_labels.update(lookup(rule, "targetSecret.labels", {}))
+        #target_secret_labels = source_secret_item.labels
+        #target_secret_labels.update(lookup(rule, "targetSecret.labels", {}))
+
+        target_secret_labels = lookup(rule, "targetSecret.labels", {})
 
         target_secret_obj["metadata"]["labels"] = target_secret_labels
 
